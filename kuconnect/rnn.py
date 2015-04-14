@@ -1,0 +1,146 @@
+import theano
+import theano.tensor as T
+from theano import shared
+import numpy as np
+import random
+import cPickle
+from inits import *
+from dropout import *
+
+floatX = theano.config.floatX
+
+def initialize_weights(n_in, n_hidden, bias=False, init="normal", scale=0.01, n_out = None):
+    """
+    Initialize weights, use normal or uniform distribution
+    """
+    if init == "normal":
+        init_func = normal
+    elif init == "uniform":
+        init_func = uniform
+    elif init == "identity":
+        init_func = identity
+    else:
+        raise ValueError('Unknown rnn weight initialization function')
+    
+    if init == "identity":
+        W_ih = normal(n_in, n_hidden, name='W_ih', scale=scale)
+        if n_out != None:
+            W_hy = normal(n_hidden, n_out, name='W_hy', scale = scale)
+            W_yh = normal(n_out, n_hidden, name='W_yh', scale = scale)
+    else:
+        W_ih = init_func(n_in, n_hidden, name='W_ih', scale = scale)
+        if n_out != None:
+            W_hy = init_func(n_hidden, n_out, name='W_hy', scale = scale)
+            W_yh = init_func(n_out, n_hidden, name='W_yh', scale = scale)
+    W_hh = init_func(n_hidden, n_hidden, name='W_hh', scale = scale)
+    
+    params = [W_ih, W_hh]
+    
+    if n_out != None:
+        params += [W_hy, W_yh]
+
+    if bias:
+        b_hh = zeros(n_hidden, name='b_hh')
+        params += [b_hh]
+        if n_out != None:
+            b_hy = zeros(n_out, name='b_hh')
+            params += [b_hy]
+    
+    return params
+    
+
+class Elman(object):
+    def __init__(self, input, d_input, n_in, n_hidden, h0=None, d_h0=None, activation="tanh", bias=False,
+        init="identity", scale=0.01, dropout_rate=0, truncate=-1):
+        self.input = input
+        self.d_input = d_input
+        self.n_in = n_in
+        self.n_out = n_hidden
+
+        if bias:
+            self.W_ih, self.W_hh, self.b_hh = initialize_weights(n_in,
+                n_hidden, bias, init, scale)
+            self.params = [self.W_ih, self.W_hh, self.b_hh]
+        else:
+            self.W_ih, self.W_hh = initialize_weights(n_in, n_hidden, bias,
+                init, scale)
+            self.params = [self.W_ih, self.W_hh]
+
+        self.act = get_activation_function(activation)
+        self.h0 = zeros(n_hidden, 'h0') if h0 == None else h0
+        self.d_h0 = zeros(n_hidden, 'd_h0') if d_h0 == None else d_h0
+
+        def step(x_t, h_tm1):
+            tot = T.dot(x_t, self.W_ih) + T.dot(h_tm1, self.W_hh)
+            if bias:
+                tot += self.b_hh
+            h_t = self.act(tot)
+            return h_t
+
+        self.h, _ = theano.scan(step,
+            sequences=self.input,
+            outputs_info=[self.h0],
+            n_steps=self.input.shape[0],
+            truncate_gradient=truncate)
+
+        self.d_h, _ = theano.scan(step,
+            sequences=self.d_input,
+            outputs_info=[self.d_h0],
+            n_steps=self.d_input.shape[0],
+            truncate_gradient=truncate)
+
+        self.output = self.h
+        self.d_output = dropout(self.d_h, dropout_rate)
+        self.memo = [(self.h0, self.h[-1])]
+
+class ElmanFeedback(object):
+    def __init__(self, input, d_input, n_in, n_hidden, n_out, h0=None, d_h0=None, activation="tanh", bias=False,
+        init="normal", scale=0.01, dropout_rate=0, truncate=-1):
+        self.input = input
+        self.d_input = d_input
+        self.n_in = n_in
+        self.n_out = n_out
+
+        if bias:
+            self.W_ih, self.W_hh, self.b_hh, self.W_hy, self.W_yh, self.b_hy = initialize_weights(n_in,
+                n_hidden, bias, init, scale, n_out)
+            self.params = [self.W_ih, self.W_hh, self.W_hy, self.W_yh,
+                self.b_hh, sel.b_hy]
+        else:
+            self.W_ih, self.W_hh, self.W_hy, self.W_yh = initialize_weights(n_in, n_hidden, bias,
+                init, scale, n_out)
+
+            self.params = [self.W_ih, self.W_hh, self.W_hy, self.W_yh]
+
+        self.act = get_activation_function(activation)
+        
+        self.h0 = zeros(n_hidden, 'h0') if h0 == None else h0
+        self.d_h0 = zeros(n_hidden, 'd_h0') if d_h0 == None else d_h0
+        
+        self.y0 = zeros(n_hidden, 'y0')
+        self.d_y0 = zeros(n_hidden, 'y_h0')
+
+        def step(x_t, h_tm1, y_tm1):
+            tot = T.dot(x_t, self.W_ih) + T.dot(h_tm1, self.W_hh) + T.dot(y_tm1, self.W_yh)
+            h_t = self.act(tot + self.b_hh) if bias else self.act(tot)
+            
+            tot = T.dot(h_t, self.W_hy)
+            y_t = T.nnet.softmax(tot + self.b_hy) if bias else T.nnet.softmax(tot)
+
+            return h_t, y_t
+
+        [self.h, self.y], _ = theano.scan(step,
+            sequences=self.input,
+            outputs_info=[self.h0, self.y0],
+            n_steps=self.input.shape[0],
+            truncate_gradient=truncate)
+
+        [self.d_h, self.d_y], _ = theano.scan(step,
+            sequences=self.d_input,
+            outputs_info=[self.d_h0, self.d_y0],
+            n_steps=self.d_input.shape[0],
+            truncate_gradient=truncate)
+
+        self.output = self.y
+        self.d_output = dropout(self.d_y, dropout_rate)
+        self.memo = [(self.h0, self.h[-1]), (self.y0, self.y[-1])]
