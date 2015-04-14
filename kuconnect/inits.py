@@ -43,8 +43,8 @@ def identity(n_in, n_out, name, scale=1):
     return shared(vals, name=name, borrow=True)
 
 def zeros(n, name):
-    return shared(np.zeros((n,), dtype=floatX), name=name)
+    return shared(np.zeros((n,), dtype='float32'), name=name)
 
 def defaults(n, name, scale):
-    return shared(np.ones((n, )) * scale, dtype=floatX, name=name)
+    return shared(np.ones((n, )) * scale, dtype='float32', name=name)
     

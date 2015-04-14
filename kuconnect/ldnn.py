@@ -36,22 +36,31 @@ class LDNN(object):
             self.layers.append(l)
             self.memo += l.memo
         else:
-            l = Elman(prev.output, prev.d_output, n_in, n_hidden,
-                activation=activation, dropout_rate=dropout_rate, bias=bias)
+            if "feedback" in activation:
+                act = activation.split("-")[0]
+                l = ElmanFeedback(input=prev.output, d_input=prev.d_output, n_in=n_in,
+                    n_hidden=n_hidden, n_out=n_out, h0=None, d_h0=None,
+                    activation=act, bias=bias, dropout_rate=dropout_rate)
+            else:
+                l = Elman(prev.output, prev.d_output, n_in, n_hidden,
+                    activation=activation, dropout_rate=dropout_rate, bias=bias)
             self.layers.append(l)
             self.memo += l.memo
 
     def connect_output(self, n_out):
-        if self.net_config[0][0].contains("Feedback"):
-            
-        self.output_layer = OutputLayer(self.layers[-1].output,
-            self.layers[-1].d_output, self.layers[-1].n_out, n_out)
-
-
-        self.predict = theano.function(inputs=[self.input],
-            outputs=[self.output_layer.y_pred],
-            updates=self.get_one_prediction_updates(),
-            allow_input_downcast=True)
+        if "feedback" in self.net_config[-1][0]:
+            self.output_layer = self.layers[-1]
+            self.predict = theano.function(inputs=[self.input],
+                outputs=[self.output_layer.y_pred],
+                updates=self.get_one_prediction_updates(),
+                allow_input_downcast=True)
+        else:            
+            self.output_layer = OutputLayer(self.layers[-1].output,
+                self.layers[-1].d_output, self.layers[-1].n_out, n_out)
+            self.predict = theano.function(inputs=[self.input],
+                outputs=[self.output_layer.y_pred],
+                updates=self.get_one_prediction_updates(),
+                allow_input_downcast=True)
 
     def get_one_prediction_updates(self):
         updates = []
@@ -68,11 +77,13 @@ class LDNN(object):
         for l in self.layers:
             if l.params != None:
                 params += l.params
-        params += self.output_layer.params
+        if not ("feedback" in self.net_config[-1][0]):
+            params += self.output_layer.params
         return params
 
     def get_cost(self, y, l2=0):
         cost = self.output_layer.d_loss(y)
+        
         if l2 != 0:
             params = self.get_params()
             for p in params:
