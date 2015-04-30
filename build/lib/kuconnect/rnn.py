@@ -155,58 +155,12 @@ class ElmanFeedback(object):
         self.y_pred = T.argmax(self.p_y_given_x, axis=1)
         self.d_y_pred = T.argmax(self.d_p_y_given_x, axis=1)
         
-        self.loss = lambda y: T.mean(T.nnet.categorical_crossentropy(self.p_y_given_x, y))
+        self.loss = lambda y: -T.mean(T.log(self.p_y_given_x)[T.arange(y.shape[0]), y])
         self.error = lambda y: T.mean(T.neq(self.y_pred, y))
 
-        self.d_loss = lambda y: T.mean(T.nnet.categorical_crossentropy(self.d_p_y_given_x, y))
+        self.d_loss = lambda y: -T.mean(T.log(self.d_p_y_given_x)[T.arange(y.shape[0]), y])
         self.d_error = lambda y: T.mean(T.neq(self.d_y_pred, y))
 
         self.output = self.y
         self.d_output = self.d_y
         self.memo = [(self.h0, self.h[-1]), (self.y0, self.y[-1])]
-
-class BidirectionalElman(object):
-    def __init__(self, input, d_input, n_in, n_hidden, h0=None, d_h0=None, activation="tanh", bias=False,
-        init="identity", scale=0.01, dropout_rate=0, truncate=-1):
-        self.input = input
-        self.d_input = d_input
-        self.n_in = n_in
-        self.n_out = n_hidden
-
-        if bias:
-            self.W_ih, self.W_hh, self.b_hh = initialize_weights(n_in,
-                n_hidden, bias, init, scale)
-            self.params = [self.W_ih, self.W_hh, self.b_hh]
-        else:
-            self.W_ih, self.W_hh = initialize_weights(n_in, n_hidden, bias,
-                init, scale)
-            self.params = [self.W_ih, self.W_hh]
-
-        self.act = get_activation_function(activation)
-        self.h0 = zeros(n_hidden, 'h0') if h0 == None else h0
-        self.d_h0 = zeros(n_hidden, 'd_h0') if d_h0 == None else d_h0
-
-        def step(x_t, h_tm1):
-            tot = T.dot(x_t, self.W_ih) + T.dot(h_tm1, self.W_hh)
-            if bias:
-                tot += self.b_hh
-            h_t = self.act(tot)
-            return h_t
-
-        self.h, _ = theano.scan(step,
-            sequences=self.input,
-            outputs_info=[self.h0],
-            n_steps=self.input.shape[0],
-            truncate_gradient=truncate)
-
-        self.d_h, _ = theano.scan(step,
-            sequences=self.d_input,
-            outputs_info=[self.d_h0],
-            n_steps=self.d_input.shape[0],
-            truncate_gradient=truncate)
-
-        self.output = self.h
-        self.d_output = dropout(self.d_h, dropout_rate)
-        self.memo = [(self.h0, self.h[-1])]
-
-

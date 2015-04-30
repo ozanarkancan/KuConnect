@@ -3,12 +3,14 @@ import theano.tensor as T
 import numpy as np
 from collections import OrderedDict
 
-def clip_norms(gs, ps, c):
-	norm = sum([T.sum(g**2) for g in gs])
-    not_finite = T.or_(T.isnan(norm), T.isinf(norm))
-    norm = T.sqrt(norm)
-    norm = T.switch(T.ge(norm_gs, c), c / norm, 1.)
-	return [T.switch(not_finite, .1 * p, g * norm) for p, g in zip(ps, gs)]
+def clip_norm(g, c, n):
+	if c > 0:
+		g = T.switch(T.ge(n, c), g*c/n, g)
+	return g
+
+def clip_norms(gs, c):
+	norm = T.sqrt(sum([T.sum(g**2) for g in gs]))
+	return [clip_norm(g, c, norm) for g in gs]
 
 def max_norm(p, maxnorm=0.):
 	if maxnorm > 0:
