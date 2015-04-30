@@ -4,11 +4,11 @@ import numpy as np
 from collections import OrderedDict
 
 def clip_norms(gs, ps, c):
-	norm = sum([T.sum(g**2) for g in gs])
+    norm = sum([T.sum(g**2) for g in gs])
     not_finite = T.or_(T.isnan(norm), T.isinf(norm))
     norm = T.sqrt(norm)
     norm = T.switch(T.ge(norm_gs, c), c / norm, 1.)
-	return [T.switch(not_finite, .1 * p, g * norm) for p, g in zip(ps, gs)]
+    return [T.switch(not_finite, .1 * p, g * norm) for p, g in zip(ps, gs)]
 
 def max_norm(p, maxnorm=0.):
 	if maxnorm > 0:
