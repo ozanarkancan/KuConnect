@@ -27,9 +27,9 @@ def initialize_weights(n_in, n_hidden, bias=False, init="normal", scale=0.01, n_
     params = [W_ih, W_hh]
     
     if n_out != None:
-        params += [W_hy, W_yh]
         W_hy = init_func(n_hidden, n_out, name='W_hy', scale = scale)
         W_yh = init_func(n_out, n_hidden, name='W_yh', scale = scale)
+        params += [W_hy, W_yh]
 
     if bias:
         b_hh = zeros(n_hidden, name='b_hh')
