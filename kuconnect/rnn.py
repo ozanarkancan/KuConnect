@@ -21,22 +21,15 @@ def initialize_weights(n_in, n_hidden, bias=False, init="normal", scale=0.01, n_
         init_func = identity
     else:
         raise ValueError('Unknown rnn weight initialization function')
-    
-    if init == "identity":
-        W_ih = normal(n_in, n_hidden, name='W_ih', scale=scale)
-        if n_out != None:
-            W_hy = normal(n_hidden, n_out, name='W_hy', scale = scale)
-            W_yh = normal(n_out, n_hidden, name='W_yh', scale = scale)
-    else:
-        W_ih = init_func(n_in, n_hidden, name='W_ih', scale = scale)
-        if n_out != None:
-            W_hy = init_func(n_hidden, n_out, name='W_hy', scale = scale)
-            W_yh = init_func(n_out, n_hidden, name='W_yh', scale = scale)
+
+    W_ih = init_func(n_in, n_hidden, name='W_ih', scale = scale)
     W_hh = init_func(n_hidden, n_hidden, name='W_hh', scale = scale)
     params = [W_ih, W_hh]
     
     if n_out != None:
         params += [W_hy, W_yh]
+        W_hy = init_func(n_hidden, n_out, name='W_hy', scale = scale)
+        W_yh = init_func(n_out, n_hidden, name='W_yh', scale = scale)
 
     if bias:
         b_hh = zeros(n_hidden, name='b_hh')

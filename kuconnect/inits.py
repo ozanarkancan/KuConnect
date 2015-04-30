@@ -38,8 +38,7 @@ def orthogonal(n_in, n_out, name, scale=1):
 	return shared(vals, name=name, borrow=True)
 
 def identity(n_in, n_out, name, scale=1):
-    assert n_in == n_out
-    vals = np.eye(n_in, dtype='float32')
+    vals = np.eye(n_in, n_out, dtype='float32')
     return shared(vals, name=name, borrow=True)
 
 def zeros(n, name):
