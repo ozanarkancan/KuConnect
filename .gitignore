@@ -1,2 +1,4 @@
 *.pyc
 kuconnect.egg-info/*
+build/
+dist/
