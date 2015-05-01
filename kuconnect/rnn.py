@@ -15,15 +15,18 @@ def initialize_weights(n_in, n_hidden, bias=False, init="normal", scale=0.01, n_
     """
     if init == "normal":
         init_func = normal
+        init_func_rec = normal
     elif init == "uniform":
         init_func = uniform
+        init_func_rec = uniform
     elif init == "identity":
-        init_func = identity
+        init_func = normal
+        init_func_rec = identity
     else:
         raise ValueError('Unknown rnn weight initialization function')
 
     W_ih = init_func(n_in, n_hidden, name='W_ih', scale = scale)
-    W_hh = init_func(n_hidden, n_hidden, name='W_hh', scale = scale)
+    W_hh = init_func_rec(n_hidden, n_hidden, name='W_hh', scale = scale)
     params = [W_ih, W_hh]
     
     if n_out != None:
