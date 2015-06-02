@@ -54,9 +54,9 @@ class LSTM(object):
             self.W_xo, self.W_ho, self.W_co]
         
         self.h0 = zeros(n_hidden, name='h0') if h0 == None else h0
-        self.c0 = zeros(n_hidden, name='c0') if d_h0 == None else d_h0
+        self.c0 = zeros(n_hidden, name='c0')
         
-        self.d_h0 = zeros(n_hidden, name='d_h0')
+        self.d_h0 = zeros(n_hidden, name='c0') if d_h0 == None else d_h0
         self.d_c0 = zeros(n_hidden, name='d_c0')
  
         def step(x_t, h_tm1, c_tm1):
