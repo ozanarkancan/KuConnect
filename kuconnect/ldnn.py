@@ -55,7 +55,7 @@ class LDNN(object):
             d_input = self.layers[-1].d_output[-1] if lastone else self.layers[-1].d_output
             self.output_layer = OutputLayer(input, d_input,
                 self.layers[-1].n_out, n_out, losstype=losstype)
-        outputs = [self.output_layer.y_pred] if losstype == "softmax" else [self.output_layer.output]
+        outputs = [self.output_layer.y_pred, self.output_layer.p_y_given_x] if losstype == "softmax" else [self.output_layer.output]
         self.predict = theano.function(inputs=[self.input],
             outputs=outputs,
             updates=self.get_one_prediction_updates(),
