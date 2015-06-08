@@ -23,7 +23,7 @@ def initialize_weights(n_in, n_hidden, bias=False, scale=0.01):
     
     if bias:
         b_i = zeros(n_hidden, name='b_i')
-        b_f = theano.shared(np.ones((n_hidden,),dtype=floatX) * 10, name='b_f')
+        b_f = theano.shared(np.ones((n_hidden,),dtype=floatX) * 1, name='b_f')
         b_c = zeros(n_hidden, name='b_c')
         b_o = zeros(n_hidden, name='b_o')
         return W_xi, W_hi, W_ci, W_xf, W_hf, W_cf, W_xc, W_hc, W_xo, W_ho, W_co, b_i, b_f, b_c, b_o
@@ -64,7 +64,7 @@ class LSTM(object):
             i_t = T.nnet.sigmoid(tot_i + self.b_i) if bias else T.nnet.sigmoid(tot_i)
 
             tot_f = T.dot(x_t, self.W_xf) + T.dot(h_tm1, self.W_hf) + c_tm1 * self.W_cf
-            f_t = T.nnet.sigmoid(tot_f + self.b_f) if bias else T.nnet.sigmoid(tot_f)
+            f_t = T.nnet.sigmoid(tot_f + self.b_f + np.ones((n_hidden,),dtype=floatX)) if bias else T.nnet.sigmoid(tot_f)
 
             tot_c = T.dot(x_t, self.W_xc) + T.dot(h_tm1, self.W_hc)
             c_t = f_t * c_tm1 + i_t * T.tanh(tot_c + self.b_c) if bias else f_t * c_tm1 + i_t * T.tanh(tot_c)
