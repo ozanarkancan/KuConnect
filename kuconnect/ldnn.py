@@ -30,6 +30,11 @@ class LDNN(object):
                 dropout_rate=dropout_rate, bias=bias)
             self.layers.append(l)
             self.memo += l.memo
+        elif activation == "lstm-peephole":
+            l = LSTMPeephole(prev.output, prev.d_output, n_in, n_hidden,
+                dropout_rate=dropout_rate, bias=bias)
+            self.layers.append(l)
+            self.memo += l.memo
         elif activation == "gru":
             l = GRU(prev.output, prev.d_output, n_in, n_hidden,
             dropout_rate=dropout_rate, bias=bias)
