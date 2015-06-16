@@ -23,7 +23,7 @@ def initialize_weights(n_in, n_hidden, bias=False, scale=0.01):
     
     if bias:
         b_i = zeros(n_hidden, name='b_i')
-        b_f = theano.shared(np.ones((n_hidden,),dtype=floatX) * 1, name='b_f')
+        b_f = theano.shared(np.ones((n_hidden,),dtype=floatX) * 20, name='b_f')
         b_c = zeros(n_hidden, name='b_c')
         b_o = zeros(n_hidden, name='b_o')
         return W_xi, W_hi, W_ci, W_xf, W_hf, W_cf, W_xc, W_hc, W_xo, W_ho, W_co, b_i, b_f, b_c, b_o
