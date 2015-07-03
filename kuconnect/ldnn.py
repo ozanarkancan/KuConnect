@@ -22,22 +22,22 @@ class LDNN(object):
         l = InputLayer(input, dropout_rate)
         self.layers.append(l)
 
-    def add_layer(self, n_in, n_hidden, dropout_rate, activation, bias, internal=False, n_out=None):
+    def add_layer(self, n_in, n_hidden, dropout_rate, activation, bias, internal=False, n_out=None, truncate=-1):
         self.net_config.append((activation, n_hidden, dropout_rate))
         prev = self.layers[-1]
         if activation == "lstm":
             l = LSTM(prev.output, prev.d_output, n_in, n_hidden,
-                dropout_rate=dropout_rate, bias=bias)
+                dropout_rate=dropout_rate, bias=bias, truncate=truncate)
             self.layers.append(l)
             self.memo += l.memo
         elif activation == "lstm-peephole":
             l = LSTMPeephole(prev.output, prev.d_output, n_in, n_hidden,
-                dropout_rate=dropout_rate, bias=bias)
+                dropout_rate=dropout_rate, bias=bias, truncate=truncate)
             self.layers.append(l)
             self.memo += l.memo
         elif activation == "gru":
             l = GRU(prev.output, prev.d_output, n_in, n_hidden,
-            dropout_rate=dropout_rate, bias=bias)
+            dropout_rate=dropout_rate, bias=bias, truncate=truncate)
             self.layers.append(l)
             self.memo += l.memo
         else:
@@ -45,10 +45,10 @@ class LDNN(object):
                 act = activation.split("-")[0]
                 l = ElmanFeedback(input=prev.output, d_input=prev.d_output, n_in=n_in,
                     n_hidden=n_hidden, n_out=n_out, h0=None, d_h0=None,
-                    activation=act, bias=bias, dropout_rate=dropout_rate)
+                    activation=act, bias=bias, dropout_rate=dropout_rate, truncate=truncate)
             else:
                 l = Elman(prev.output, prev.d_output, n_in, n_hidden,
-                    activation=activation, dropout_rate=dropout_rate, bias=bias)
+                    activation=activation, dropout_rate=dropout_rate, bias=bias, truncate=truncate)
             self.layers.append(l)
             self.memo += l.memo
 
