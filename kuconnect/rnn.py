@@ -175,7 +175,7 @@ class BidirectionalElman(object):
             activation=activation, bias=bias, init=init, scale=scale,
             dropout_rate=dropout_rate, truncate=truncate)
         
-        self.back = Elman(input[:, ::-1], d_input[:, ::-1], n_in, n_hidden,
+        self.back = Elman(input[::-1, :], d_input[::-1, :], n_in, n_hidden,
             activation=activation, bias=bias, init=init, scale=scale,
             dropout_rate=dropout_rate, truncate=truncate)
 
@@ -183,6 +183,6 @@ class BidirectionalElman(object):
 
         self.f_output = self.forw.output
         self.f_d_output = self.forw.d_output
-        self.b_output = self.back.output[::-1]
-        self.b_d_output = self.back.d_output[::-1]
+        self.b_output = self.back.output[::-1, :]
+        self.b_d_output = self.back.d_output[::-1, :]
         self.memo = self.forw.memo + self.back.memo
