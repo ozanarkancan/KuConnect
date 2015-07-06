@@ -24,7 +24,7 @@ def initialize_weights(n_in, n_hidden, bias=False, scale=0.01):
         return W_xr, W_hr, W_xz, W_hz, W_xh, W_hh
 
 class GRU(object):
-    def __init__(self, input, d_input, n_in, n_hidden, bias=False, trucate=-1,
+    def __init__(self, input, d_input, n_in, n_hidden, bias=True, trucate=-1,
         dropout_rate=0, scale=0.01):
 
         self.input = input

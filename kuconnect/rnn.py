@@ -45,7 +45,7 @@ def initialize_weights(n_in, n_hidden, bias=False, init="normal", scale=0.01, n_
     
 
 class Elman(object):
-    def __init__(self, input, d_input, n_in, n_hidden, h0=None, d_h0=None, activation="tanh", bias=False,
+    def __init__(self, input, d_input, n_in, n_hidden, h0=None, d_h0=None, activation="tanh", bias=True,
         init="identity", scale=0.01, dropout_rate=0, truncate=-1):
         self.input = input
         self.d_input = d_input
@@ -89,7 +89,7 @@ class Elman(object):
         self.memo = [(self.h0, self.h[-1])]
 
 class ElmanFeedback(object):
-    def __init__(self, input, d_input, n_in, n_hidden, n_out, h0=None, d_h0=None, activation="tanh", bias=False,
+    def __init__(self, input, d_input, n_in, n_hidden, n_out, h0=None, d_h0=None, activation="tanh", bias=True,
         init="normal", scale=0.01, dropout_rate=0, truncate=-1):
         self.input = input
         self.d_input = d_input
