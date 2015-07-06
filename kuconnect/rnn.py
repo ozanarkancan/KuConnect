@@ -162,47 +162,27 @@ class ElmanFeedback(object):
         self.memo = [(self.h0, self.h[-1]), (self.y0, self.y[-1])]
 
 class BidirectionalElman(object):
-    def __init__(self, input, d_input, n_in, n_hidden, h0=None, d_h0=None, activation="tanh", bias=False,
+    def __init__(self, input, d_input, n_in, n_hidden, hf0=None, hb0=None,
+        d_hf0=None, d_hb0=None, activation="tanh", bias=True,
         init="identity", scale=0.01, dropout_rate=0, truncate=-1):
+
         self.input = input
         self.d_input = d_input
         self.n_in = n_in
         self.n_out = n_hidden
 
-        if bias:
-            self.W_ih, self.W_hh, self.b_hh = initialize_weights(n_in,
-                n_hidden, bias, init, scale)
-            self.params = [self.W_ih, self.W_hh, self.b_hh]
-        else:
-            self.W_ih, self.W_hh = initialize_weights(n_in, n_hidden, bias,
-                init, scale)
-            self.params = [self.W_ih, self.W_hh]
+        self.forw = Elman(input, d_input, n_in, n_hidden,
+            activation=activation, bias=bias, init=init, scale=scale,
+            dropout_rate=dropout_rate, truncate=truncate)
+        
+        self.back = Elman(input, d_input, n_in, n_hidden,
+            activation=activation, bias=bias, init=init, scale=scale,
+            dropout_rate=dropout_rate, truncate=truncate)
 
-        self.act = get_activation_function(activation)
-        self.h0 = zeros(n_hidden, 'h0') if h0 == None else h0
-        self.d_h0 = zeros(n_hidden, 'd_h0') if d_h0 == None else d_h0
+        self.params = self.forw.params + self.back.params
 
-        def step(x_t, h_tm1):
-            tot = T.dot(x_t, self.W_ih) + T.dot(h_tm1, self.W_hh)
-            if bias:
-                tot += self.b_hh
-            h_t = self.act(tot)
-            return h_t
-
-        self.h, _ = theano.scan(step,
-            sequences=self.input,
-            outputs_info=[self.h0],
-            n_steps=self.input.shape[0],
-            truncate_gradient=truncate)
-
-        self.d_h, _ = theano.scan(step,
-            sequences=self.d_input,
-            outputs_info=[self.d_h0],
-            n_steps=self.d_input.shape[0],
-            truncate_gradient=truncate)
-
-        self.output = self.h
-        self.d_output = dropout(self.d_h, dropout_rate)
-        self.memo = [(self.h0, self.h[-1])]
-
-
+        self.f_output = self.forw.output
+        self.f_d_output = self.forw.d_output
+        self.b_output = self.back.output
+        self.b_d_output = self.back.d_output
+        self.memo = self.forw.memo + self.back.memo
