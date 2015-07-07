@@ -56,7 +56,7 @@ class LSTM(object):
         self.h0 = zeros(n_hidden, name='h0') if h0 == None else h0
         self.c0 = zeros(n_hidden, name='c0')
         
-        self.d_h0 = zeros(n_hidden, name='c0') if d_h0 == None else d_h0
+        self.d_h0 = zeros(n_hidden, name='d_h0') if d_h0 == None else d_h0
         self.d_c0 = zeros(n_hidden, name='d_c0')
  
         def step(x_t, h_tm1, c_tm1):
@@ -114,7 +114,7 @@ class LSTMPeephole(object):
         self.h0 = zeros(n_hidden, name='h0') if h0 == None else h0
         self.c0 = zeros(n_hidden, name='c0')
         
-        self.d_h0 = zeros(n_hidden, name='c0') if d_h0 == None else d_h0
+        self.d_h0 = zeros(n_hidden, name='d_h0') if d_h0 == None else d_h0
         self.d_c0 = zeros(n_hidden, name='d_c0')
  
         def step(x_t, h_tm1, c_tm1):
@@ -145,3 +145,27 @@ class LSTMPeephole(object):
         self.output = self.h
         self.d_output = dropout(self.d_h, dropout_rate)
         self.memo = [(self.h0, self.h[-1]), (self.c0, self.c[-1])]
+
+class BidirectionalLSTM(object):
+    def __init__(self, input, d_input, n_in, n_hidden,
+        bias=True, dropout_rate=0, truncate=-1, scale=0.01):
+        
+        self.input = input
+        self.d_input = d_input
+        self.n_in = n_in
+        self.n_out = n_hidden
+
+        self.forw = LSTM(input, d_input, n_in, n_hidden,
+            dropout_rate=dropout_rate, bias=bias, truncate=truncate)
+        
+        self.back = LSTM(input[::-1, :], d_input[::-1, :], n_in, n_hidden,
+            dropout_rate=dropout_rate, bias=bias, truncate=truncate)
+
+        self.params = self.forw.params + self.back.params
+
+        self.f_output = self.forw.output
+        self.f_d_output = self.forw.d_output
+        self.b_output = self.back.output[::-1, :]
+        self.b_d_output = self.back.d_output[::-1, :]
+        
+        self.memo = self.forw.memo + self.back.memo
