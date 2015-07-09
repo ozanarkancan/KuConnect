@@ -52,7 +52,8 @@ class LDNN(object):
                     l = BidirectionalLSTM(prev.output, prev.d_output, n_in, n_hidden,
                         dropout_rate=dropout_rate, bias=bias, truncate=truncate)
                 elif act == "gru":
-                    print "Not implemented"
+                    l = BidrectionalGRU(prev.output, prev.d_output, n_in, n_hidden,
+                        dropout_rate=dropout_rate, bias=bias, truncate=truncate)
                 else:
                     l = BidirectionalElman(input=prev.output, d_input=prev.d_output, n_in=n_in,
                         n_hidden=n_hidden, hf0=None, hb0=None, d_hf0=None,

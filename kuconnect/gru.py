@@ -65,3 +65,26 @@ class GRU(object):
         self.output = self.h
         self.d_output = dropout(self.d_h, dropout_rate)
         self.memo = [(self.h0, self.h[-1])]
+
+class BidirectionalGRU(object):
+    def __init__(self, input, d_input, n_in, n_hidden, bias=True, truncate=-1,
+        dropout_rate=0, scale=0.01):
+
+        self.input = input
+        self.d_input = d_input
+        self.n_in = n_in
+        self.n_out = n_hidden
+
+        self.forw = l = GRU(input, d_input, n_in, n_hidden,
+            dropout_rate=dropout_rate, bias=bias, truncate=truncate)
+        
+        self.back = l = GRU(input[::-1, :], d_input[::-1, :], n_in, n_hidden,
+            dropout_rate=dropout_rate, bias=bias, truncate=truncate)
+
+        self.params = self.forw.params + self.back.params
+
+        self.f_output = self.forw.output
+        self.f_d_output = self.forw.d_output
+        self.b_output = self.back.output[::-1, :]
+        self.b_d_output = self.back.d_output[::-1, :]
+        self.memo = self.forw.memo + self.back.memo
