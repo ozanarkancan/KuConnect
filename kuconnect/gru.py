@@ -24,7 +24,7 @@ def initialize_weights(n_in, n_hidden, bias=False, scale=0.01):
         return W_xr, W_hr, W_xz, W_hz, W_xh, W_hh
 
 class GRU(object):
-    def __init__(self, input, d_input, n_in, n_hidden, bias=True, trucate=-1,
+    def __init__(self, input, d_input, n_in, n_hidden, bias=True, truncate=-1,
         dropout_rate=0, scale=0.01):
 
         self.input = input
@@ -59,8 +59,8 @@ class GRU(object):
             h_t = z_t * h_tm1 + (1 - z_t) * h_c
             return h_t
         
-        self.h, _ = theano.scan(step, sequences=self.input,outputs_info=[self.h0], n_steps=self.input.shape[0])
-        self.d_h, _ = theano.scan(step, sequences=self.input,outputs_info=[self.d_h0], n_steps=self.d_input.shape[0])
+        self.h, _ = theano.scan(step, sequences=self.input,outputs_info=[self.h0], n_steps=self.input.shape[0], truncate_gradient=truncate)
+        self.d_h, _ = theano.scan(step, sequences=self.input,outputs_info=[self.d_h0], n_steps=self.d_input.shape[0], truncate_gradient=truncate)
         
         self.output = self.h
         self.d_output = dropout(self.d_h, dropout_rate)
