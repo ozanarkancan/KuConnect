@@ -26,6 +26,18 @@ def weight_regularize(p, maxnorm=0.):
 	p = max_norm(p, maxnorm)
 	return p
 
+def get_updates(optim, params, gparams, lr)
+    if optim == "rmsprop":
+        updates = rmsprop(params, gparams, lr)
+    elif optim == "adagrad":
+        updates = adagrad(params, gparams, lr)
+    elif optim == "adam":
+        updates = adam(params, gparams)
+    else:#sgd
+        updates = sgd(params, gparams, lr)
+
+    return updates
+
 def sgd(params, grads, lr=0.01):
 	updates = [(p, p - lr * g) for p, g in zip(params, grads)]
 	return updates
