@@ -26,7 +26,7 @@ def weight_regularize(p, maxnorm=0.):
 	p = max_norm(p, maxnorm)
 	return p
 
-def get_updates(optim, params, gparams, lr)
+def get_updates(optim, params, gparams, lr):
     if optim == "rmsprop":
         updates = rmsprop(params, gparams, lr)
     elif optim == "adagrad":
