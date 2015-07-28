@@ -110,3 +110,18 @@ class LDNN(object):
                 if not p.name.startswith('b_'):
                     cost += l2 * (p ** 2).sum()
         return cost
+
+    def save(self, filename="net.save"):
+        f = file(filename, 'wb')
+        params = self.get_params()
+        for p in params:
+            cPickle.dump(p.get_value()), f, protocol=cPickle.HIGHEST_PROTOCOL
+        f.close()
+
+    def load(self, filename="net.save"):
+        f = file(filename, "rb")
+        params = self.get_params()
+        for p in params:
+            p.set_value(cPickle.load())
+        f.close()
+        
