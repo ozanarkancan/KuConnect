@@ -115,7 +115,7 @@ class LDNN(object):
         f = file(filename, 'wb')
         params = self.get_params()
         for p in params:
-            cPickle.dump(p.get_value()), f, protocol=cPickle.HIGHEST_PROTOCOL
+            cPickle.dump(p.get_value(), f, protocol=cPickle.HIGHEST_PROTOCOL)
         f.close()
 
     def load(self, filename="net.save"):
