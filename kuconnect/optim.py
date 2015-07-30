@@ -50,7 +50,7 @@ def momentum(params, grads, lr=0.01, m_val=0.9):
         m = theano.shared(p.get_value() * 0.)
         v = (m_val * m) - (lr * g)
         updates.append((m, v))
-	    updates.append((p, p + v))
+        updates.append((p, p + v))
     return updates
 
 def rmsprop(params, grads, lr=0.001, rho=0.9, epsilon=1e-6):
