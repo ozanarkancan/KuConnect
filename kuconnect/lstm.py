@@ -71,7 +71,7 @@ class LSTM(object):
 
             tot_o = T.dot(x_t, self.W_xo) + T.dot(h_tm1, self.W_ho) + c_t * self.W_co
             o_t = T.nnet.sigmoid(tot_o + self.b_o) if bias else T.nnet.sigmoid(tot_o)
-            h_t = o_t * get_activation_function("relu")(c_t)#T.tanh(c_t)
+            h_t = o_t * T.tanh(c_t)
             return h_t, c_t
             
         [self.h, self.c], _ = theano.scan(step, sequences=self.input,
