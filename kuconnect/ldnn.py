@@ -42,10 +42,16 @@ class LDNN(object):
             self.memo += l.memo
         else:
             if "feedback" in activation:
+                prms = activation.split("-")
                 act = activation.split("-")[0]
-                l = ElmanFeedback(input=prev.output, d_input=prev.d_output, n_in=n_in,
-                    n_hidden=n_hidden, n_out=n_out, h0=None, d_h0=None,
-                    activation=act, bias=bias, dropout_rate=dropout_rate, truncate=truncate)
+                if len(prms) == 2:
+                    l = ElmanFeedback(input=prev.output, d_input=prev.d_output, n_in=n_in,
+                        n_hidden=n_hidden, n_out=n_out, h0=None, d_h0=None,
+                        activation=act, bias=bias, dropout_rate=dropout_rate, truncate=truncate)
+                elif len(prms) == 3:
+                    l = ElmanFeedback2(input=prev.output, d_input=prev.d_output, n_in=n_in,
+                        n_hidden=n_hidden, n_out=n_out, h0=None, d_h0=None,
+                        activation=act, bias=bias, dropout_rate=dropout_rate, truncate=truncate)
             elif activation.startswith("bi"):
                 act = activation.split("-")[1]
                 if act == "lstm":
