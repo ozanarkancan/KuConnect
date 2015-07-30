@@ -26,13 +26,15 @@ def weight_regularize(p, maxnorm=0.):
 	p = max_norm(p, maxnorm)
 	return p
 
-def get_updates(optim, params, gparams, lr):
+def get_updates(optim, params, gparams, lr=0.01, m_val=0.9):
     if optim == "rmsprop":
         updates = rmsprop(params, gparams, lr)
     elif optim == "adagrad":
         updates = adagrad(params, gparams, lr)
     elif optim == "adam":
         updates = adam(params, gparams)
+    elif optim == "momentum":
+        updates = momentum(params, gparams, lr, m_val)
     else:#sgd
         updates = sgd(params, gparams, lr)
 
@@ -41,6 +43,15 @@ def get_updates(optim, params, gparams, lr):
 def sgd(params, grads, lr=0.01):
 	updates = [(p, p - lr * g) for p, g in zip(params, grads)]
 	return updates
+
+def momentum(params, grads, lr=0.01, m_val=0.9):
+    updates = []
+    for p,g in zip(params,grads):
+        m = theano.shared(p.get_value() * 0.)
+        v = (m_val * m) - (lr * g)
+        updates.append((m, v))
+	    updates.append((p, p + v))
+    return updates
 
 def rmsprop(params, grads, lr=0.001, rho=0.9, epsilon=1e-6):
 	updates = []
