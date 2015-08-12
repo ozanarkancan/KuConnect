@@ -273,20 +273,23 @@ class ElmanFeedback2(object):
 
 
 class BidirectionalElman(object):
-    def __init__(self, input, d_input, n_in, n_hidden, hf0=None, hb0=None,
+    def __init__(self, f_input, f_d_input, b_input, b_d_input, n_in, n_hidden, hf0=None, hb0=None,
         d_hf0=None, d_hb0=None, activation="tanh", bias=True,
         init="identity", scale=0.01, dropout_rate=0, truncate=-1):
 
-        self.input = input
-        self.d_input = d_input
+        self.f_input = f_input
+        self.f_d_input = f_d_input
+        self.b_input = b_input[::-1, :]
+        self.b_d_input = b_d_input[::-1, :]
+
         self.n_in = n_in
         self.n_out = n_hidden
 
-        self.forw = Elman(input, d_input, n_in, n_hidden,
+        self.forw = Elman(self.f_input, self.f_d_input, n_in, n_hidden,
             activation=activation, bias=bias, init=init, scale=scale,
             dropout_rate=dropout_rate, truncate=truncate)
         
-        self.back = Elman(input[::-1, :], d_input[::-1, :], n_in, n_hidden,
+        self.back = Elman(self.b_input, self.b_d_input, n_in, n_hidden,
             activation=activation, bias=bias, init=init, scale=scale,
             dropout_rate=dropout_rate, truncate=truncate)
 

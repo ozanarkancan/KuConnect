@@ -17,7 +17,7 @@ def get_data(seq):
         while n1 == n2:
             n1, n2 = np.random.randint(0, high=seq, size= (2, ))
         return n1, n2
-
+    
     def get_one_instance():
         x1 = np.random.uniform(0, 1, size=(seq, ))
         n1, n2 = get_integers()
@@ -26,15 +26,14 @@ def get_data(seq):
         x = np.transpose(np.array([x1, x2]))
         y = np.asarray(np.array([np.dot(x1, x2)]), dtype='float32')
         return x, y
-
+    
     genX = lambda size: map(list, zip(*[get_one_instance() for i in xrange(size)])) 
-
+    
     trainX, trainY = genX(int(1e2))
     devX, devY = genX(int(1e1))
     
     return trainX, trainY, devX, devY
     
-
 if __name__ == "__main__":
     parser = get_arg_parser()
     args = vars(parser.parse_args())
@@ -46,6 +45,7 @@ if __name__ == "__main__":
     print "Building the model"
     u = T.matrix(dtype=theano.config.floatX)
     y = T.ivector()
+    
     ldnn = LDNN()
     ldnn.add_input_layer(u, dropout_rate=0)
     ldnn.add_layer(2, 100, dropout_rate=0,
@@ -57,12 +57,12 @@ if __name__ == "__main__":
     gparams = T.grad(cost, params)
     gparams = clip_norms(gparams, 100)
     updates = sgd(params, gparams, 0.01)
-
+    
     train_model = function(inputs=[u, y],
         outputs=[cost],
         updates=updates,
         allow_input_downcast=True)
- 
+    
     print "Training"
     for i in xrange(10):
         start = time.time()

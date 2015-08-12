@@ -21,6 +21,11 @@ class LDNN(object):
         self.input = input
         l = InputLayer(input, dropout_rate)
         self.layers.append(l)
+    
+    def add_bidirectional_input_layer(self, input, dropout_rate):
+        self.input = input
+        l = BidirectionalInputLayer(input, dropout_rate)
+        self.layers.append(l)
 
     def add_layer(self, n_in, n_hidden, dropout_rate, activation, bias, internal=False, n_out=None, truncate=-1):
         self.net_config.append((activation, n_hidden, dropout_rate))
@@ -55,13 +60,16 @@ class LDNN(object):
             elif activation.startswith("bi"):
                 act = activation.split("-")[1]
                 if act == "lstm":
-                    l = BidirectionalLSTM(prev.output, prev.d_output, n_in, n_hidden,
+                    l = BidirectionalLSTM(prev.f_output, prev.f_d_output,
+                        prev.b_output, prev.b_d_output, n_in, n_hidden,
                         dropout_rate=dropout_rate, bias=bias, truncate=truncate)
                 elif act == "gru":
-                    l = BidirectionalGRU(prev.output, prev.d_output, n_in, n_hidden,
+                    l = BidirectionalGRU(prev.f_output, prev.f_d_output,
+                        prev.b_output, prev.b_d_output, n_in, n_hidden,
                         dropout_rate=dropout_rate, bias=bias, truncate=truncate)
                 else:
-                    l = BidirectionalElman(input=prev.output, d_input=prev.d_output, n_in=n_in,
+                    l = BidirectionalElman(prev.f_output, prev.f_d_output,
+                        prev.b_output, prev.b_d_output, n_in=n_in,
                         n_hidden=n_hidden, hf0=None, hb0=None, d_hf0=None,
                         d_hb0=None, activation=act, bias=bias, dropout_rate=dropout_rate, truncate=truncate)
             else:
