@@ -23,13 +23,13 @@ def initialize_weights(n_in, n_out, bias=True, init="normal", scale=0.01):
         return W
 
 class InputLayer(object):
-	def __init__(self, input, srng, dropout_rate=0.5):
+	def __init__(self, input, dropout_rate=0.5):
 		self.output = input
 		self.d_output = dropout(input, dropout_rate)
 		self.params = None
 
 class BidirectionalInputLayer(object):
-	def __init__(self, input, srng, dropout_rate=0.5):
+	def __init__(self, input, dropout_rate=0.5):
 		self.f_output = input
 		self.f_d_output = dropout(input, dropout_rate)
 		self.b_output = input
