@@ -32,8 +32,8 @@ class BidirectionalInputLayer(object):
 	def __init__(self, input, srng, dropout_rate=0.5):
 		self.f_output = input
 		self.f_d_output = dropout(input, dropout_rate)
-        self.b_output = input
-        self.b_d_output = dropout(input, dropout_rate)
+		self.b_output = input
+		self.b_d_output = dropout(input, dropout_rate)
 		self.params = None
 
 class OutputLayer(object):
