@@ -27,7 +27,8 @@ class LDNN(object):
         l = BidirectionalInputLayer(input, dropout_rate)
         self.layers.append(l)
 
-    def add_layer(self, n_in, n_hidden, dropout_rate, activation, bias, internal=False, n_out=None, truncate=-1):
+    def add_layer(self, n_in, n_hidden, dropout_rate, activation, bias,
+        internal=False, n_out=None, truncate=-1, indices=None):
         self.net_config.append((activation, n_hidden, dropout_rate))
         prev = self.layers[-1]
         if activation == "lstm":
@@ -45,6 +46,9 @@ class LDNN(object):
             dropout_rate=dropout_rate, bias=bias, truncate=truncate)
             self.layers.append(l)
             self.memo += l.memo
+        elif activation == "meanpool":
+            l = MeanPoolingLayer(prev.output, prev.d_output, indices,
+                prev.n_out, prev.n_out)
         else:
             if "feedback" in activation:
                 prms = activation.split("-")
@@ -67,6 +71,10 @@ class LDNN(object):
                     l = BidirectionalGRU(prev.f_output, prev.f_d_output,
                         prev.b_output, prev.b_d_output, n_in, n_hidden,
                         dropout_rate=dropout_rate, bias=bias, truncate=truncate)
+                elif act == "meanpool":
+                    l = BidirectionalMeanPoolingLayer(prev.f_output,
+                        prev.f_d_output, prev.b_output, prev.b_d_output,
+                        indices, prev.n_out, prev.n_out)
                 else:
                     l = BidirectionalElman(prev.f_output, prev.f_d_output,
                         prev.b_output, prev.b_d_output, n_in=n_in,
@@ -76,7 +84,8 @@ class LDNN(object):
                 l = Elman(prev.output, prev.d_output, n_in, n_hidden,
                     activation=activation, dropout_rate=dropout_rate, bias=bias, truncate=truncate)
             self.layers.append(l)
-            self.memo += l.memo
+            if not (l.memo is None):
+                self.memo += l.memo
 
     def connect_output(self, n_out, losstype="softmax", lastone=False):
         if "feedback" in self.net_config[-1][0]:

@@ -36,6 +36,48 @@ class BidirectionalInputLayer(object):
 		self.b_d_output = dropout(input, dropout_rate)
 		self.params = None
 
+class MeanPoolingLayer(object):
+    def __init__(self, input, d_input, indices, n_in, n_out):
+        self.input = input
+        self.d_input = d_input
+        self.params = None
+        self.n_in = n_in
+        self.n_out = n_out
+        
+        def step(i, H):
+            return T.mean(H[i[0]:i[1], :], 0)
+
+        self.output, _ = theano.scan(fn=step,
+            outputs_info=None,
+            sequences=indices,
+            non_sequences=self.input)
+        
+        self.d_output, _ = theano.scan(fn=step,
+            outputs_info=None,
+            sequences=indices,
+            non_sequences=self.d_input)
+
+        self.memo = None
+
+class BidirectionalMeanPoolingLayer(object):
+    def __init__(self, f_input, f_d_input, b_input, b_d_input, indices, n_in, n_out):
+        self.f_input = f_input
+        self.f_d_input = f_d_input
+        self.b_input = self.b_input[::-1, :]
+        self.b_d_input = self.b_d_input[::-1, :]
+        self.params = None
+        self.n_in = n_in
+        self.n_out = n_out
+
+        self.forw = MeanPoolingLayer(self.f_input, self.f_d_input, indices, n_in, n_out)
+        self.back = MeanPoolingLayer(self.b_input, self.b_d_input, indices, n_in, n_out)
+
+        self.f_output = self.forw.output
+        self.f_d_output = self.forw.d_output
+        self.b_output = self.back.output[::-1, :]
+        self.b_d_output = self.back.d_output[::-1, :]
+        self.memo = None
+        
 class OutputLayer(object):
     def __init__(self, input, d_input, n_in, n_out, bias=True, losstype="softmax"):
         self.n_in = n_in
