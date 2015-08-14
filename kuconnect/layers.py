@@ -64,8 +64,8 @@ class BidirectionalMeanPoolingLayer(object):
     def __init__(self, f_input, f_d_input, b_input, b_d_input, indices, n_in, n_out):
         self.f_input = f_input
         self.f_d_input = f_d_input
-        self.b_input = self.b_input[::-1, :]
-        self.b_d_input = self.b_d_input[::-1, :]
+        self.b_input = b_input[::-1, :]
+        self.b_d_input = b_d_input[::-1, :]
         self.params = None
         self.n_in = n_in
         self.n_out = n_out
