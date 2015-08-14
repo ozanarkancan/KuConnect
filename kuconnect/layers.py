@@ -43,6 +43,7 @@ class MeanPoolingLayer(object):
         self.params = None
         self.n_in = n_in
         self.n_out = n_out
+	self.indices = indices
         
         def step(i, H):
             return T.mean(H[i[0]:i[1], :], 0)
@@ -68,6 +69,7 @@ class BidirectionalMeanPoolingLayer(object):
         self.params = None
         self.n_in = n_in
         self.n_out = n_out
+	self.indices = indices
 
         self.forw = MeanPoolingLayer(self.f_input, self.f_d_input, indices, n_in, n_out)
         self.back = MeanPoolingLayer(self.b_input, self.b_d_input, indices, n_in, n_out)
