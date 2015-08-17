@@ -88,7 +88,8 @@ class LDNN(object):
             if not (l.memo is None):
                 self.memo += l.memo
 
-    def connect_output(self, n_out, losstype="softmax", lastone=False, compile_predict=True):
+    def connect_output(self, n_out, losstype="softmax", lastone=False,
+        compile_predict=True, recurrent=False):
         if "feedback" in self.net_config[-1][0]:
             self.output_layer = self.layers[-1]
         elif "bi" in self.net_config[-1][0]:
@@ -98,8 +99,12 @@ class LDNN(object):
         else:
             input = self.layers[-1].output[-1] if lastone else self.layers[-1].output
             d_input = self.layers[-1].d_output[-1] if lastone else self.layers[-1].d_output
-            self.output_layer = OutputLayer(input, d_input,
-                self.layers[-1].n_out, n_out, losstype=losstype)
+            if recurrent:
+                self.output_layer = RecurrentOutputLayer(input, d_input,
+                    self.layers[-1].n_out, n_out, losstype=losstype)
+            else:
+                self.output_layer = OutputLayer(input, d_input,
+                    self.layers[-1].n_out, n_out, losstype=losstype)
         outputs = [self.output_layer.y_pred, self.output_layer.p_y_given_x] if losstype == "softmax" else [self.output_layer.output]
 	if compile_predict:
         	self.predict = theano.function(inputs=[self.input],

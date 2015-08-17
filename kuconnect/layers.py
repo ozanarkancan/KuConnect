@@ -11,6 +11,8 @@ def initialize_weights(n_in, n_out, bias=True, init="normal", scale=0.01):
         init_func = uniform
     elif init == "orthogonal":
         init_func = orthogonal
+    elif init == "identity":
+        init_func = identity
     else:
         raise ValueError("Unknown weight initialization function")
 
@@ -138,6 +140,51 @@ class BidirectionalOutputLayer(object):
         else:
             raise ValueError('Unknown loss')
         self.params = [self.Wf, self.Wb, self.b]
+
+class RecurrentOutputLayer(object):
+    def __init__(self, input, d_input, n_in, n_out, bias=True, losstype="softmax"):
+        self.n_in = n_in
+        self.n_out = n_out
+        
+        self.W, self.b = initialize_weights(n_in, n_out)
+        self.W_r = initialize_weights(n_out, n_out, bias=False, init="identity")
+        
+        self.y0 = zeros(n_out, 'y0')
+        self.d_y0 = zeros(n_out, 'd_y0')
+
+        def step(x_t, y_tm1):
+            y = T.dot(x_t, self.W) + T.dot(self.W_r, y_tm1) + self.b
+            if losstype == "softmax":
+                y = T.nnet.softmax(y)
+
+            return y
+
+        self.output, _ = theano.scan(step,
+            sequences=self.input,
+            outputs=info=[self.y0],
+            n_steps=self.input.shape[0])
+        
+        self.d_output, _ = theano.scan(step,
+            sequences=self.d_input,
+            outputs=info=[self.d_y0],
+            n_steps=self.input.shape[0])
+
+        if losstype == "softmax":
+            self.p_y_given_x = self.output
+            self.y_pred = T.argmax(self.p_y_given_x, axis=1)
+            self.loss = lambda y: T.mean(T.nnet.categorical_crossentropy(self.p_y_given_x, y))
+            self.error = lambda y: T.mean(T.neq(self.y_pred, y))
+            
+            self.d_p_y_given_x = self.d_output
+            self.d_y_pred = T.argmax(self.d_p_y_given_x, axis=1)
+            self.d_loss = lambda y: T.mean(T.nnet.categorical_crossentropy(self.d_p_y_given_x, y))
+            self.d_error = lambda y: T.mean(T.neq(self.d_y_pred, y))
+        elif losstype == "mse":
+            self.loss = lambda y: T.mean((self.output - y) ** 2)
+            self.d_loss = lambda y: T.mean((self.d_output - y) ** 2)
+        else:
+            raise ValueError('Unknown loss')
+        self.params = [self.W, self.b]
 
 
 class Layer(object):
