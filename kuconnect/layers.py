@@ -161,12 +161,12 @@ class BidirectionalRecurrentOutputLayer(object):
             return y
 
         self.output, _ = theano.scan(step,
-            sequences=[f_input, b_input]
+            sequences=[f_input, b_input],
             outputs_info=[self.y0],
             n_steps=self.input.shape[0])
         
         self.d_output, _ = theano.scan(step,
-            sequences=[f_d_input, b_d_input]
+            sequences=[f_d_input, b_d_input],
             outputs_info=[self.d_y0],
             n_steps=self.input.shape[0])
 

@@ -94,8 +94,12 @@ class LDNN(object):
             self.output_layer = self.layers[-1]
         elif "bi" in self.net_config[-1][0]:
             p_l = self.layers[-1]
-            self.output_layer = BidirectionalOutputLayer(p_l.f_output, p_l.f_d_output, 
-                p_l.b_output, p_l.b_d_output, p_l.n_out, n_out, losstype=losstype)
+	    if recurrent:
+		self.output_layer = BidirectionalRecurrentOutputLayer(p_l.f_output,
+		    p_l.f_d_output, p_l.b_output, p_l.b_d_output, p_l.n_out, n_out, losstype=losstype)
+	    else:
+            	self.output_layer = BidirectionalOutputLayer(p_l.f_output, p_l.f_d_output, 
+                    p_l.b_output, p_l.b_d_output, p_l.n_out, n_out, losstype=losstype)
         else:
             input = self.layers[-1].output[-1] if lastone else self.layers[-1].output
             d_input = self.layers[-1].d_output[-1] if lastone else self.layers[-1].d_output
