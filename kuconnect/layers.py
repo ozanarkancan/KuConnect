@@ -161,12 +161,12 @@ class RecurrentOutputLayer(object):
 
         self.output, _ = theano.scan(step,
             sequences=self.input,
-            outputs=info=[self.y0],
+            outputs_info=[self.y0],
             n_steps=self.input.shape[0])
         
         self.d_output, _ = theano.scan(step,
             sequences=self.d_input,
-            outputs=info=[self.d_y0],
+            outputs_info=[self.d_y0],
             n_steps=self.input.shape[0])
 
         if losstype == "softmax":
