@@ -46,6 +46,9 @@ class LDNN(object):
             dropout_rate=dropout_rate, bias=bias, truncate=truncate)
             self.layers.append(l)
             self.memo += l.memo
+        elif activation == "pool":
+            l = PoolingLayer(prev.output, prev.d_output, indices,
+                prev.n_out, prev.n_out)
         elif activation == "meanpool":
             l = MeanPoolingLayer(prev.output, prev.d_output, indices,
                 prev.n_out, prev.n_out)
@@ -74,6 +77,10 @@ class LDNN(object):
                         dropout_rate=dropout_rate, bias=bias, truncate=truncate)
                 elif act == "meanpool":
                     l = BidirectionalMeanPoolingLayer(prev.f_output,
+                        prev.f_d_output, prev.b_output, prev.b_d_output,
+                        indices, prev.n_out, prev.n_out)
+                elif act == "pool":
+                    l = BidirectionalPoolingLayer(prev.f_output,
                         prev.f_d_output, prev.b_output, prev.b_d_output,
                         indices, prev.n_out, prev.n_out)
                 else:

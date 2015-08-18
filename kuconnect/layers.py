@@ -81,7 +81,37 @@ class BidirectionalMeanPoolingLayer(object):
         self.b_output = self.back.output[::-1, :]
         self.b_d_output = self.back.d_output[::-1, :]
         self.memo = None
+ 
+class PoolingLayer(object):
+    def __init__(self, input, d_input, indices, n_in, n_out):
+        self.input = input
+        self.d_input = d_input
+        self.params = None
+        self.n_in = n_in
+        self.n_out = n_out
+        self.indices = indices
+        self.output = self.input[indices, :]
+        self.d_output = self.d_input[indices, :]
         
+        self.memo = None
+
+class BidirectionalPoolingLayer(object):
+    def __init__(self, f_input, f_d_input, b_input, b_d_input, indices, n_in, n_out):
+        self.f_input = f_input
+        self.f_d_input = f_d_input
+        self.b_input = b_input[::-1, :]
+        self.b_d_input = b_d_input[::-1, :]
+        self.params = None
+        self.n_in = n_in
+        self.n_out = n_out
+        self.indices = indices
+
+        self.f_output = self.f_input[indices, :]
+        self.f_d_output = self.f_d_input[indices, :]
+        self.b_output = self.b_input[indices, :][::-1, :]
+        self.b_d_output = self.b_d_input[indices, :][::-1, :]
+        self.memo = None
+
 class OutputLayer(object):
     def __init__(self, input, d_input, n_in, n_out, bias=True, losstype="softmax"):
         self.n_in = n_in
