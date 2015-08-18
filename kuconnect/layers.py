@@ -147,28 +147,28 @@ class BidirectionalRecurrentOutputLayer(object):
         self.n_out = n_out
         
         self.W_f, self.b = initialize_weights(n_in, n_out)
-        self.W_b = initialize_weights(n_in, n_out)
+        self.W_b = initialize_weights(n_in, n_out, bias=False)
         self.W_r = initialize_weights(n_out, n_out, bias=False, init="identity")
         
         self.y0 = zeros(n_out, 'y0')
         self.d_y0 = zeros(n_out, 'd_y0')
 
         def step(f_x_t, b_x_t, y_tm1):
-            y = T.dot(f_x_t, self.W_f) + T.dot(b_x_t) + T.dot(self.W_r, y_tm1) + self.b
+            y = T.dot(f_x_t, self.W_f) + T.dot(b_x_t, self.W_b) + T.dot(y_tm1, self.W_r) + self.b
             if losstype == "softmax":
-                y = T.nnet.softmax(y)
+                y = T.nnet.softmax(y).dimshuffle((1, ))
 
             return y
 
         self.output, _ = theano.scan(step,
-            sequences=[f_input, b_input]
+            sequences=[f_input, b_input],
             outputs_info=[self.y0],
-            n_steps=self.input.shape[0])
+            n_steps=f_input.shape[0])
         
         self.d_output, _ = theano.scan(step,
-            sequences=[f_d_input, b_d_input]
+            sequences=[f_d_input, b_d_input],
             outputs_info=[self.d_y0],
-            n_steps=self.input.shape[0])
+            n_steps=b_d_input.shape[0])
 
         if losstype == "softmax":
             self.p_y_given_x = self.output
@@ -195,25 +195,26 @@ class RecurrentOutputLayer(object):
         self.W, self.b = initialize_weights(n_in, n_out)
         self.W_r = initialize_weights(n_out, n_out, bias=False, init="identity")
         
+
         self.y0 = zeros(n_out, 'y0')
-        self.d_y0 = zeros(n_out, 'd_y0')
+        self.d_y0 = zeros(n_out, 'y0')
 
         def step(x_t, y_tm1):
-            y = T.dot(x_t, self.W) + T.dot(self.W_r, y_tm1) + self.b
+            y = T.dot(x_t, self.W) + T.dot(y_tm1, self.W_r) + self.b
             if losstype == "softmax":
-                y = T.nnet.softmax(y)
+                y = T.nnet.softmax(y).dimshuffle((1,))
 
             return y
 
         self.output, _ = theano.scan(step,
             sequences=input,
             outputs_info=[self.y0],
-            n_steps=self.input.shape[0])
+            n_steps=input.shape[0])
         
         self.d_output, _ = theano.scan(step,
             sequences=d_input,
             outputs_info=[self.d_y0],
-            n_steps=self.input.shape[0])
+            n_steps=d_input.shape[0])
 
         if losstype == "softmax":
             self.p_y_given_x = self.output
