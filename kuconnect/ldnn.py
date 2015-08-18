@@ -96,22 +96,29 @@ class LDNN(object):
                 self.memo += l.memo
 
     def connect_output(self, n_out, losstype="softmax", lastone=False,
-        compile_predict=True, recurrent=False):
+        compile_predict=True, recurrent=0):
         if "feedback" in self.net_config[-1][0]:
             self.output_layer = self.layers[-1]
         elif "bi" in self.net_config[-1][0]:
             p_l = self.layers[-1]
-	    if recurrent:
-		self.output_layer = BidirectionalRecurrentOutputLayer(p_l.f_output,
-		    p_l.f_d_output, p_l.b_output, p_l.b_d_output, p_l.n_out, n_out, losstype=losstype)
-	    else:
+            
+            if recurrent == 1:
+                self.output_layer = BidirectionalRecurrentOutputLayer(p_l.f_output,
+                    p_l.f_d_output, p_l.b_output, p_l.b_d_output, p_l.n_out, n_out, losstype=losstype)
+            elif recurrent == 2:
+                self.output_layer = BidirectionalRecurrent2OutputLayer(p_l.f_output,
+                    p_l.f_d_output, p_l.b_output, p_l.b_d_output, p_l.n_out, n_out, losstype=losstype)
+            else:
             	self.output_layer = BidirectionalOutputLayer(p_l.f_output, p_l.f_d_output, 
                     p_l.b_output, p_l.b_d_output, p_l.n_out, n_out, losstype=losstype)
         else:
             input = self.layers[-1].output[-1] if lastone else self.layers[-1].output
             d_input = self.layers[-1].d_output[-1] if lastone else self.layers[-1].d_output
-            if recurrent:
+            if recurrent == 1:
                 self.output_layer = RecurrentOutputLayer(input, d_input,
+                    self.layers[-1].n_out, n_out, losstype=losstype)
+            if recurrent == 2:
+                self.output_layer = Recurrent2OutputLayer(input, d_input,
                     self.layers[-1].n_out, n_out, losstype=losstype)
             else:
                 self.output_layer = OutputLayer(input, d_input,
