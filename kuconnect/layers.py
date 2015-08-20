@@ -280,7 +280,7 @@ class Recurrent2OutputLayer(object):
             y_t = T.dot(x_t, self.W) + T.dot(y_tm1, self.W_r) + \
                 T.dot(y_tm2, self.W_r2) + self.b
             if losstype == "softmax":
-                y_t = T.nnet.softmax(_ty).dimshuffle((1,))
+                y_t = T.nnet.softmax(y_t).dimshuffle((1,))
 
             return y_t
 

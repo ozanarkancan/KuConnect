@@ -49,10 +49,11 @@ class LDNN(object):
         elif activation == "pool":
             l = PoolingLayer(prev.output, prev.d_output, indices,
                 prev.n_out, prev.n_out)
+            self.layers.append(l)
         elif activation == "meanpool":
             l = MeanPoolingLayer(prev.output, prev.d_output, indices,
                 prev.n_out, prev.n_out)
-	    self.layers.append(l)
+            self.layers.append(l)
         else:
             if "feedback" in activation:
                 prms = activation.split("-")
