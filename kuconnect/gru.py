@@ -56,7 +56,7 @@ class GRU(object):
             
             tot_h = T.dot(x_t, self.W_xh) + T.dot(h_tm1 * r_t, self.W_hh)
             h_c = T.tanh(tot_h + self.b_h) if bias else T.tanh(tot_h)
-            h_t = z_t * h_tm1 + (1 - z_t) * h_c
+            h_t = (1 - z_t) * h_tm1 + z_t * h_c
             return h_t
         
         self.h, _ = theano.scan(step, sequences=self.input,outputs_info=[self.h0], n_steps=self.input.shape[0], truncate_gradient=truncate)
