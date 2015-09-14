@@ -6,6 +6,65 @@ import cPickle
 import theano.tensor as T
 from inits import zeros
 
+def get_layer(prev, activation, n_in, n_hidden, n_out, dropout_rate, bias, truncate,
+    indices):
+    if activation == "lstm":
+        l = LSTM(prev.output, prev.d_output, n_in, n_hidden,
+            dropout_rate=dropout_rate, bias=bias, truncate=truncate)
+    elif activation == "lstm-peephole":
+        l = LSTMPeephole(prev.output, prev.d_output, n_in, n_hidden,
+            dropout_rate=dropout_rate, bias=bias, truncate=truncate)
+    elif activation == "gru":
+        l = GRU(prev.output, prev.d_output, n_in, n_hidden,
+            dropout_rate=dropout_rate, bias=bias, truncate=truncate)
+    elif activation == "pool":
+        l = PoolingLayer(prev.output, prev.d_output, indices,
+            prev.n_out, prev.n_out)
+    elif activation == "meanpool":
+        l = MeanPoolingLayer(prev.output, prev.d_output, indices,
+            prev.n_out, prev.n_out)
+    else:
+        if "feedback" in activation:
+            prms = activation.split("-")
+            act = activation.split("-")[0]
+            if len(prms) == 2:
+                l = ElmanFeedback(input=prev.output, d_input=prev.d_output, n_in=n_in,
+                    n_hidden=n_hidden, n_out=n_out, h0=None, d_h0=None,
+                    activation=act, bias=bias, dropout_rate=dropout_rate, truncate=truncate)
+            elif len(prms) == 3:
+                l = ElmanFeedback2(input=prev.output, d_input=prev.d_output, n_in=n_in,
+                    n_hidden=n_hidden, n_out=n_out, h0=None, d_h0=None,
+                    activation=act, bias=bias, dropout_rate=dropout_rate, truncate=truncate)
+        elif activation.startswith("bi"):
+            act = activation.split("-")[1]
+            if act == "lstm":
+                l = BidirectionalLSTM(prev.f_output, prev.f_d_output,
+                        prev.b_output, prev.b_d_output, n_in, n_hidden,
+                        dropout_rate=dropout_rate, bias=bias, truncate=truncate)
+            elif act == "gru":
+                l = BidirectionalGRU(prev.f_output, prev.f_d_output,
+                        prev.b_output, prev.b_d_output, n_in, n_hidden,
+                        dropout_rate=dropout_rate, bias=bias, truncate=truncate)
+            elif act == "meanpool":
+                l = BidirectionalMeanPoolingLayer(prev.f_output,
+                        prev.f_d_output, prev.b_output, prev.b_d_output,
+                        indices, prev.n_out, prev.n_out)
+            elif act == "pool":
+                l = BidirectionalPoolingLayer(prev.f_output,
+                        prev.f_d_output, prev.b_output, prev.b_d_output,
+                        indices, prev.n_out, prev.n_out)
+            else:
+                l = BidirectionalElman(prev.f_output, prev.f_d_output,
+                        prev.b_output, prev.b_d_output, n_in=n_in,
+                        n_hidden=n_hidden, hf0=None, hb0=None, d_hf0=None,
+                        d_hb0=None, activation=act, bias=bias, dropout_rate=dropout_rate, truncate=truncate)
+        else:
+            l = Elman(prev.output, prev.d_output, n_in, n_hidden,
+                activation=activation, dropout_rate=dropout_rate, bias=bias, truncate=truncate)
+
+        return l
+ 
+
 class LDNN(object):
     """
     Large Deep Neural Network
@@ -16,14 +75,21 @@ class LDNN(object):
         self.net_config = [] #(layer type, size, dropout rate)
         self.output_layer = None
         self.memo = []
+        self.input = None
 
     def add_input_layer(self, input, dropout_rate):
-        self.input = input
+        if self.input is None:
+            self.input = input
+        else:
+            self.input2 = input
         l = InputLayer(input, dropout_rate)
         self.layers.append(l)
     
     def add_bidirectional_input_layer(self, input, dropout_rate):
-        self.input = input
+        if self.input is None:
+            self.input = input
+        else:
+            self.input2 = input
         l = BidirectionalInputLayer(input, dropout_rate)
         self.layers.append(l)
 
@@ -31,70 +97,13 @@ class LDNN(object):
         internal=False, n_out=None, truncate=-1, indices=None):
         self.net_config.append((activation, n_hidden, dropout_rate))
         prev = self.layers[-1]
-        if activation == "lstm":
-            l = LSTM(prev.output, prev.d_output, n_in, n_hidden,
-                dropout_rate=dropout_rate, bias=bias, truncate=truncate)
-            self.layers.append(l)
+        
+        l = get_layer(prev, activation, n_in, n_hidden, n_out,
+            dropout_rate, bias, truncate=truncate, indices=indices)
+
+        self.layers.append(l)
+        if not (l.memo is None):
             self.memo += l.memo
-        elif activation == "lstm-peephole":
-            l = LSTMPeephole(prev.output, prev.d_output, n_in, n_hidden,
-                dropout_rate=dropout_rate, bias=bias, truncate=truncate)
-            self.layers.append(l)
-            self.memo += l.memo
-        elif activation == "gru":
-            l = GRU(prev.output, prev.d_output, n_in, n_hidden,
-            dropout_rate=dropout_rate, bias=bias, truncate=truncate)
-            self.layers.append(l)
-            self.memo += l.memo
-        elif activation == "pool":
-            l = PoolingLayer(prev.output, prev.d_output, indices,
-                prev.n_out, prev.n_out)
-            self.layers.append(l)
-        elif activation == "meanpool":
-            l = MeanPoolingLayer(prev.output, prev.d_output, indices,
-                prev.n_out, prev.n_out)
-            self.layers.append(l)
-        else:
-            if "feedback" in activation:
-                prms = activation.split("-")
-                act = activation.split("-")[0]
-                if len(prms) == 2:
-                    l = ElmanFeedback(input=prev.output, d_input=prev.d_output, n_in=n_in,
-                        n_hidden=n_hidden, n_out=n_out, h0=None, d_h0=None,
-                        activation=act, bias=bias, dropout_rate=dropout_rate, truncate=truncate)
-                elif len(prms) == 3:
-                    l = ElmanFeedback2(input=prev.output, d_input=prev.d_output, n_in=n_in,
-                        n_hidden=n_hidden, n_out=n_out, h0=None, d_h0=None,
-                        activation=act, bias=bias, dropout_rate=dropout_rate, truncate=truncate)
-            elif activation.startswith("bi"):
-                act = activation.split("-")[1]
-                if act == "lstm":
-                    l = BidirectionalLSTM(prev.f_output, prev.f_d_output,
-                        prev.b_output, prev.b_d_output, n_in, n_hidden,
-                        dropout_rate=dropout_rate, bias=bias, truncate=truncate)
-                elif act == "gru":
-                    l = BidirectionalGRU(prev.f_output, prev.f_d_output,
-                        prev.b_output, prev.b_d_output, n_in, n_hidden,
-                        dropout_rate=dropout_rate, bias=bias, truncate=truncate)
-                elif act == "meanpool":
-                    l = BidirectionalMeanPoolingLayer(prev.f_output,
-                        prev.f_d_output, prev.b_output, prev.b_d_output,
-                        indices, prev.n_out, prev.n_out)
-                elif act == "pool":
-                    l = BidirectionalPoolingLayer(prev.f_output,
-                        prev.f_d_output, prev.b_output, prev.b_d_output,
-                        indices, prev.n_out, prev.n_out)
-                else:
-                    l = BidirectionalElman(prev.f_output, prev.f_d_output,
-                        prev.b_output, prev.b_d_output, n_in=n_in,
-                        n_hidden=n_hidden, hf0=None, hb0=None, d_hf0=None,
-                        d_hb0=None, activation=act, bias=bias, dropout_rate=dropout_rate, truncate=truncate)
-            else:
-                l = Elman(prev.output, prev.d_output, n_in, n_hidden,
-                    activation=activation, dropout_rate=dropout_rate, bias=bias, truncate=truncate)
-            self.layers.append(l)
-            if not (l.memo is None):
-                self.memo += l.memo
 
     def connect_output(self, n_out, losstype="softmax", lastone=False,
         compile_predict=True, recurrent=0):
