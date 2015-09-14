@@ -118,6 +118,9 @@ class LDNN(object):
             elif recurrent == 2:
                 self.output_layer = BidirectionalRecurrent2OutputLayer(p_l.f_output,
                     p_l.f_d_output, p_l.b_output, p_l.b_d_output, p_l.n_out, n_out, losstype=losstype)
+            elif recurrent == 3:
+                self.output_layer = BidirectionalRecurrent3OutputLayer(p_l.f_output,
+                    p_l.f_d_output, p_l.b_output, p_l.b_d_output, p_l.n_out, n_out, losstype=losstype)
             else:
             	self.output_layer = BidirectionalOutputLayer(p_l.f_output, p_l.f_d_output, 
                     p_l.b_output, p_l.b_d_output, p_l.n_out, n_out, losstype=losstype)
@@ -127,8 +130,11 @@ class LDNN(object):
             if recurrent == 1:
                 self.output_layer = RecurrentOutputLayer(input, d_input,
                     self.layers[-1].n_out, n_out, losstype=losstype)
-            if recurrent == 2:
+            elif recurrent == 2:
                 self.output_layer = Recurrent2OutputLayer(input, d_input,
+                    self.layers[-1].n_out, n_out, losstype=losstype)
+            elif recurrent == 3:
+                self.output_layer = Recurrent3OutputLayer(input, d_input,
                     self.layers[-1].n_out, n_out, losstype=losstype)
             else:
                 self.output_layer = OutputLayer(input, d_input,
