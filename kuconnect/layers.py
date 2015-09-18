@@ -171,79 +171,45 @@ class BidirectionalOutputLayer(object):
             raise ValueError('Unknown loss')
         self.params = [self.Wf, self.Wb, self.b]
 
-class BidirectionalRecurrentOutputLayer(object):
-    def __init__(self, f_input, f_d_input, b_input, b_d_input, n_in, n_out, bias=True, losstype="softmax"):
-        self.n_in = n_in
-        self.n_out = n_out
-        
-        self.W_f, self.b = initialize_weights(n_in, n_out)
-        self.W_b = initialize_weights(n_in, n_out, bias=False)
-        self.W_r = initialize_weights(n_out, n_out, bias=False, init="identity")
-        
-        self.y0 = zeros(n_out, 'y0')
-        self.d_y0 = zeros(n_out, 'd_y0')
-
-        def step(f_x_t, b_x_t, y_tm1):
-            y = T.dot(f_x_t, self.W_f) + T.dot(b_x_t, self.W_b) + T.dot(y_tm1, self.W_r) + self.b
-            if losstype == "softmax":
-                y = T.nnet.softmax(y).dimshuffle((1, ))
-
-            return y
-
-        self.output, _ = theano.scan(step,
-            sequences=[f_input, b_input],
-            outputs_info=[self.y0],
-            n_steps=f_input.shape[0])
-        
-        self.d_output, _ = theano.scan(step,
-            sequences=[f_d_input, b_d_input],
-            outputs_info=[self.d_y0],
-            n_steps=b_d_input.shape[0])
-
-        if losstype == "softmax":
-            self.p_y_given_x = self.output
-            self.y_pred = T.argmax(self.p_y_given_x, axis=1)
-            self.loss = lambda y: T.mean(T.nnet.categorical_crossentropy(self.p_y_given_x, y))
-            self.error = lambda y: T.mean(T.neq(self.y_pred, y))
-            
-            self.d_p_y_given_x = self.d_output
-            self.d_y_pred = T.argmax(self.d_p_y_given_x, axis=1)
-            self.d_loss = lambda y: T.mean(T.nnet.categorical_crossentropy(self.d_p_y_given_x, y))
-            self.d_error = lambda y: T.mean(T.neq(self.d_y_pred, y))
-        elif losstype == "mse":
-            self.loss = lambda y: T.mean((self.output - y) ** 2)
-            self.d_loss = lambda y: T.mean((self.d_output - y) ** 2)
-        else:
-            raise ValueError('Unknown loss')
-        self.params = [self.W_f, self.W_b, self.W_r, self.b]
-
 class RecurrentOutputLayer(object):
-    def __init__(self, input, d_input, n_in, n_out, bias=True, losstype="softmax"):
+    def __init__(self, input, d_input, n_in, n_out, bias=True, losstype="softmax", recout=0): 
         self.n_in = n_in
         self.n_out = n_out
         
         self.W, self.b = initialize_weights(n_in, n_out)
-        self.W_r = initialize_weights(n_out, n_out, bias=False, init="identity")
-        
+        self.Wrs = []
 
-        self.y0 = zeros(n_out, 'y0')
-        self.d_y0 = zeros(n_out, 'y0')
+        for i in xrange(recout):
+            self.Wrs.append(initialize_weights(n_out, n_out, bias=False, init="identity"))
 
-        def step(x_t, y_tm1):
-            y = T.dot(x_t, self.W) + T.dot(y_tm1, self.W_r) + self.b
+        if recout < 2:
+            self.y0 = zeros(n_out, 'y0')
+            self.d_y0 = zeros(n_out, 'd_y0')
+        else:
+            self.y0 = theano.shared(np.zeros((recout, n_out), dtype='float32'),name='y0')
+            self.d_y0 = theano.shared(np.zeros((recout, n_out), dtype='float32'), name='d_y0')
+
+        def step(x_t, *args):
+            y_t = T.dot(x_t, self.W) + self.b
+            for i in xrange(recout):
+                y_t += T.dot(args[i], self.Wrs[i])
+
             if losstype == "softmax":
-                y = T.nnet.softmax(y).dimshuffle((1,))
+                y_t = T.nnet.softmax(y_t).dimshuffle((1,))
+            
+            return y_t
 
-            return y
+        o_info = self.y0 if recout < 2 else dict(initial=self.y0, taps=range(-1*recout,0))
+        d_o_info = self.d_y0 if recout < 2 else dict(initial=self.d_y0, taps=range(-1*recout,0))
 
         self.output, _ = theano.scan(step,
             sequences=input,
-            outputs_info=[self.y0],
+            outputs_info=[o_info],
             n_steps=input.shape[0])
         
         self.d_output, _ = theano.scan(step,
             sequences=d_input,
-            outputs_info=[self.d_y0],
+            outputs_info=[d_o_info],
             n_steps=d_input.shape[0])
 
         if losstype == "softmax":
@@ -261,7 +227,70 @@ class RecurrentOutputLayer(object):
             self.d_loss = lambda y: T.mean((self.d_output - y) ** 2)
         else:
             raise ValueError('Unknown loss')
-        self.params = [self.W, self.W_r, self.b]
+        
+        self.params = [self.W, self.b] + self.Wrs
+
+class BidirectionalRecurrentOutputLayer(object):
+    def __init__(self, f_input, f_d_input, b_input, b_d_input, n_in, n_out, bias=True, losstype="softmax", recout=0): 
+        self.n_in = n_in
+        self.n_out = n_out
+        
+        self.W_f, self.b = initialize_weights(n_in, n_out)
+        self.W_b = initialize_weights(n_in, n_out, bias=False)
+        self.Wrs = []
+
+        for i in xrange(recout):
+            self.Wrs.append(initialize_weights(n_out, n_out, bias=False, init="identity"))
+
+        if recout < 2:
+            self.y0 = zeros(n_out, 'y0')
+            self.d_y0 = zeros(n_out, 'd_y0')
+        else:
+            self.y0 = theano.shared(np.zeros((recout, n_out), dtype='float32'),name='y0')
+            self.d_y0 = theano.shared(np.zeros((recout, n_out), dtype='float32'), name='d_y0')
+
+        def step(f_x_t, b_x_t, *args):
+            y_t = T.dot(f_x_t, self.W_f) + T.dot(b_x_t, self.W_b) + self.b
+            for i in xrange(recout):
+                y_t += T.dot(args[i], self.Wrs[i])
+
+            if losstype == "softmax":
+                y_t = T.nnet.softmax(y_t).dimshuffle((1,))
+            
+            return y_t
+
+        o_info = self.y0 if recout < 2 else dict(initial=self.y0, taps=range(-1*recout,0))
+        d_o_info = self.d_y0 if recout < 2 else dict(initial=self.d_y0, taps=range(-1*recout,0))
+
+        self.output, _ = theano.scan(step,
+            sequences=[f_input, b_input],
+            outputs_info=[o_info],
+            n_steps=f_input.shape[0])
+        
+        self.d_output, _ = theano.scan(step,
+            sequences=[f_d_input, b_d_input],
+            outputs_info=[d_o_info],
+            n_steps=b_d_input.shape[0])
+
+        if losstype == "softmax":
+            self.p_y_given_x = self.output
+            self.y_pred = T.argmax(self.p_y_given_x, axis=1)
+            self.loss = lambda y: T.mean(T.nnet.categorical_crossentropy(self.p_y_given_x, y))
+            self.error = lambda y: T.mean(T.neq(self.y_pred, y))
+            
+            self.d_p_y_given_x = self.d_output
+            self.d_y_pred = T.argmax(self.d_p_y_given_x, axis=1)
+            self.d_loss = lambda y: T.mean(T.nnet.categorical_crossentropy(self.d_p_y_given_x, y))
+            self.d_error = lambda y: T.mean(T.neq(self.d_y_pred, y))
+        elif losstype == "mse":
+            self.loss = lambda y: T.mean((self.output - y) ** 2)
+            self.d_loss = lambda y: T.mean((self.d_output - y) ** 2)
+        else:
+            raise ValueError('Unknown loss')
+        
+        self.params = [self.W_f, self.W_b, self.b] + self.Wrs
+
+
 
 class Recurrent2OutputLayer(object):
     def __init__(self, input, d_input, n_in, n_out, bias=True, losstype="softmax"):
