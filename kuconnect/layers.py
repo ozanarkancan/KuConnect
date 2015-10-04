@@ -188,9 +188,12 @@ class RecurrentOutputLayer(object):
         else:
             self.y0 = theano.shared(np.zeros((recout, n_out), dtype='float32'),name='y0')
             self.d_y0 = theano.shared(np.zeros((recout, n_out), dtype='float32'), name='d_y0')
+        
+        preact = T.dot(input, self.W)
+        preact_d = T.dot(d_input, self.W)
 
         def step(x_t, *args):
-            y_t = T.dot(x_t, self.W) + self.b
+            y_t = x_t + self.b
             for i in xrange(recout):
                 y_t += T.dot(args[i], self.Wrs[i])
 
@@ -203,12 +206,12 @@ class RecurrentOutputLayer(object):
         d_o_info = self.d_y0 if recout < 2 else dict(initial=self.d_y0, taps=range(-1*recout,0))
 
         self.output, _ = theano.scan(step,
-            sequences=input,
+            sequences=preact,
             outputs_info=[o_info],
             n_steps=input.shape[0])
         
         self.d_output, _ = theano.scan(step,
-            sequences=d_input,
+            sequences=preact_d,
             outputs_info=[d_o_info],
             n_steps=d_input.shape[0])
 

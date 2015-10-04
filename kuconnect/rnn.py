@@ -99,22 +99,25 @@ class Elman(object):
         self.act = get_activation_function(activation)
         self.h0 = zeros(n_hidden, 'h0') if h0 == None else h0
         self.d_h0 = zeros(n_hidden, 'd_h0') if d_h0 == None else d_h0
+        
+        preact = T.dot(self.input, self.W_ih)
+        preact_d = T.dot(self.d_input, self.W_ih)
 
         def step(x_t, h_tm1):
-            tot = T.dot(x_t, self.W_ih) + T.dot(h_tm1, self.W_hh)
+            tot = x_t + T.dot(h_tm1, self.W_hh)
             if bias:
                 tot += self.b_hh
             h_t = self.act(tot)
             return h_t
 
         self.h, _ = theano.scan(step,
-            sequences=self.input,
+            sequences=preact,
             outputs_info=[self.h0],
             n_steps=self.input.shape[0],
             truncate_gradient=truncate)
 
         self.d_h, _ = theano.scan(step,
-            sequences=self.d_input,
+            sequences=preact_d,
             outputs_info=[self.d_h0],
             n_steps=self.d_input.shape[0],
             truncate_gradient=truncate)
